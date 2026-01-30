@@ -1,0 +1,273 @@
+---
+title: "Aaron Capstone Project"
+author: "Aaron  Nwafor"
+date: "2025-10-06"
+output: html_document
+---
+
+##Installing packages
+```{r setup, include=FALSE}
+install.packages(c("tidyverse","haven","survey","srvyr","tableone","gtsummary","janitor","gt"))
+
+```
+
+
+
+##loading packages
+```{r}
+library(tidyverse)
+library(haven)    
+library(survey)     
+library(srvyr)      
+library(tableone)   
+library(gtsummary)
+library(janitor)
+library(gt)
+
+```
+
+##Reading my file path
+```{r}
+Capstone <- haven::read_sav("C:/Users/Aaron/Desktop/CapstonefirearmBRFSS - Copy - Copy.sav")
+```
+
+
+
+```{r}
+library(dplyr)
+var_SEXVAR <- "_SEX"
+
+Capstone
+```
+
+##Renaming
+```{R}
+df <- Capstone %>%
+  select(all_of(c("MARITAL", "INCOME3", "EDUCA", "FIREARM5", "SEXVAR", "@_RACEGR3", "@_AGE_G", "@_URBSTAT"))) %>%
+  rename(
+    FIREARMS_Ownership = FIREARM5,
+    EDUCATIONAL_STATUS = EDUCA,
+    INCOME_LEVELS  = INCOME3,
+    URBANICITY   = '@_URBSTAT',
+    AGE_GROUPS = '@_AGE_G',
+    sEX = SEXVAR,
+    RACE = '@_RACEGR3',
+    MARITAL_STATUS = MARITAL 
+  )
+
+```
+
+
+
+##Recode Firearm
+```{r}
+Capstone_ex <- Capstone%>%
+mutate(
+    FIREARMS_Ownership = case_when(
+      FIREARM5 == 1 ~ "Yes",
+      FIREARM5 == 2 ~ "No",
+      FIREARM5 %in% c(7, 9) ~ NA_character_,
+      TRUE ~ NA_character_
+    ),
+    
+     Educational_level = case_when(
+      EDUCA %in% c(1,2,3) ~ "Elementary/Less than High School graduate",  
+      EDUCA %in% c(4) ~ "High school graduate/GED",
+      EDUCA %in% c(5) ~ "Some college or Technical school",
+      EDUCA %in% c(6) ~ "College graduate",
+      EDUCA %in% c(9) ~ NA_character_,
+      TRUE ~ NA_character_
+    ),
+    Income_level = case_when(
+      INCOME3 %in% c(1,2,3,4,5) ~ "Low(<35K)",
+      INCOME3 %in% c(6,7) ~ "Medium ($35k– < $75k)",
+      INCOME3%in% c(8,9,10,11) ~ "High(>$75K)",
+      INCOME3 %in% c(77) ~ NA_character_,
+      TRUE ~ NA_character_
+    ),
+     URBANICITY = case_when(
+      `@_URBSTAT` %in% c(1) ~ "Urban counties",
+      `@_URBSTAT` %in% c(2) ~ "Rural counties",
+      TRUE ~ NA_character_
+     ),
+     AGE_YRS = case_when(
+      `@_AGE_G` %in% c(1) ~ "18 - 24",  
+      `@_AGE_G` %in% c(2) ~ "25 - 34",
+      `@_AGE_G` %in% c(3) ~ "35 - 44",
+      `@_AGE_G`%in%  c(4) ~ "45 - 54",
+      `@_AGE_G`%in%  c(5) ~ "55 - 64",
+      `@_AGE_G`%in% c(6) ~  "65 - Older",
+      TRUE ~ NA_character_
+    ),
+    SEX_OF_RESPONDENT = case_when(
+      `SEXVAR` %in% c(1) ~ "Male",
+      `SEXVAR` %in% c(2) ~ "Female",
+      TRUE ~ NA_character_
+    ),
+    Race_ethnicity = case_when(
+      `@_RACEGR3` %in% c(1) ~ "Non Hispanic White",
+      `@_RACEGR3` %in% c(2) ~ "Black only",
+      `@_RACEGR3` %in% c(3,4) ~ "Multiracial and other race(Non Hispanic)",
+      `@_RACEGR3` %in% c(5) ~ "Hispanics",
+      '@_RACEGR3' %in% c(9) ~ NA_character_,
+      TRUE ~ NA_character_
+   ),
+    Marital_Status = case_when(
+      MARITAL %in% c(1) ~ "Married",
+      MARITAL %in% c(2,3,4) ~ "Previously Married(Divorced/Widowed/Seperated)",
+      MARITAL %in% c(5) ~ "Unmarried/Single",
+      MARITAL %in% c(6) ~ "Unmarred couple",
+      MARITAL %in% c(9) ~ NA_character_,
+      TRUE ~ NA_character_
+    ))
+
+Capstone_ex
+    
+```
+
+
+
+##Checking for missing for Missingness and sample size
+```{r}
+Capstone_ex1<-Capstone_ex %>% summarise(
+  unweighted_n = n(),
+  n_FIREARMS_Ownership_missing = sum(is.na(FIREARMS_Ownership)),
+  n_Educational_level_missing = sum(is.na(Educational_level)),
+  n_Income_level_missing = sum(is.na(Income_level)),
+  n_URBANICITY_missing = sum(is.na(URBANICITY)),
+  n_AGE_YRS_missing = sum(is.na(AGE_YRS)),
+  n_SEX_OF_RESPONDENT = sum(is.na(SEX_OF_RESPONDENT)),
+  n_Race_ethnicity_missing = sum(is.na(Race_ethnicity)),
+  n_Marital_Status_missing =sum(is.na(Marital_Status))
+  
+)
+
+
+```
+
+##Checking all missingness
+```{r}
+colSums(is.na(Capstone_ex))
+```
+
+##Isolate my variables from the Dataset
+```{r}
+Capstone_1 <- Capstone_ex %>% 
+  select(all_of(c("FIREARMS_Ownership","Educational_level","Income_level","URBANICITY","AGE_YRS","SEX_OF_RESPONDENT","Race_ethnicity","Marital_Status")))
+
+```
+
+
+
+##Checking for missing for Missingness and sample size
+```{r}
+Capstone_1mi<-Capstone_1 %>% summarise(
+  unweighted_n = n(),
+  n_FIREARMS_Ownership_missing = sum(is.na(FIREARMS_Ownership)),
+  n_Educational_level_missing = sum(is.na(Educational_level)),
+  n_Income_level_missing = sum(is.na(Income_level)),
+  n_URBANICITY_missing = sum(is.na(URBANICITY)),
+  n_AGE_YRS_missing = sum(is.na(AGE_YRS)),
+  n_SEX_OF_RESPONDENT = sum(is.na(SEX_OF_RESPONDENT)),
+  n_Race_ethnicity_missing = sum(is.na(Race_ethnicity)),
+  n_Marital_Status_missing =sum(is.na(Marital_Status))
+  
+)
+
+colSums(is.na(Capstone_1))
+
+
+```
+
+##Further ttabulation of the missingness
+```{r}
+library(dplyr)
+missing_summary <- Capstone_1 %>%
+  summarise(across(
+    everything(),
+    list(
+      n_missing = ~sum(is.na(.)),
+      pct_missing = ~mean(is.na(.)) * 100
+    ),
+    .names = "{.col}_{.fn}"
+  )) %>%
+  tidyr::pivot_longer(everything(),
+                      names_to = c("variable", ".value"),
+                      names_sep = "_")
+
+print(missing_summary)
+
+```
+
+##Commputing analytic sample
+```{r cars}
+total_n <- nrow(Capstone_1)
+library(tidyr)
+
+Capstone_Analytic_sample <-Capstone_1 %>%
+  drop_na(all_of(c(
+    "FIREARMS_Ownership",
+    "Educational_level",
+    "Income_level",
+    "URBANICITY",
+    "AGE_YRS",
+    "SEX_OF_RESPONDENT",
+    "Race_ethnicity",
+    "Marital_Status"
+    )))
+  
+
+```
+
+
+##Loading my package
+```{r}
+library(dplyr)
+library(gtsummary)
+
+```
+
+
+##Generating Table 1
+
+```{r}
+Capstone_Analytic_sample$FIREARMS_Ownership <-factor(Capstone_Analytic_sample$FIREARMS_Ownership,levels = c("Yes","No"))
+
+table1 <- Capstone_Analytic_sample %>%
+  select(FIREARMS_Ownership, Educational_level, Income_level, URBANICITY,
+         AGE_YRS, SEX_OF_RESPONDENT, Race_ethnicity, Marital_Status) %>%
+  tbl_summary(
+    by = FIREARMS_Ownership,        
+    statistic = list(
+      all_categorical() ~ "{n} ({p}%)",
+      all_continuous()  ~ "{mean} ({sd})"
+    )
+  ) %>%
+  add_overall() %>% 
+  modify_header(label = "**Variable**") %>% 
+  modify_spanning_header(all_stat_cols() ~ "**Firearm Ownership**") %>%
+  modify_caption("**Table 1. Descriptive Characteristics of U.S. Adult Stratified by Firearm Ownership**")
+
+table1
+```
+
+
+## Exporting Table 1 to Ms WOrd
+```{r}
+install.packages("gt")
+library(gt)
+
+# Convert gtsummary table to gt object
+gt_table <- as_gt(table1)
+
+# Save as Word
+gtsave(gt_table, "Table1_BRFSS.docx")
+
+# Or save as HTML
+gtsave(gt_table, "Table1_BRFSS.html")
+
+R.version.string
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
