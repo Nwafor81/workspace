@@ -1,4 +1,4 @@
-version: '3.8'
+#version: '3.8'
 
 services:
   app:
@@ -13,8 +13,8 @@ services:
         # Optional Node.js version to install
         NODE_VERSION: "lts/*"
 
-    volumes:
-      - ..:/workspace:cached  
+    #volumes:
+     # - ..:/workspace:cached  
 
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity

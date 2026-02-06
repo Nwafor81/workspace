@@ -1,7 +1,8 @@
 -- Using the root user, grant access to the mariadb user.
 GRANT ALL PRIVILEGES ON *.* TO 'mariadb'@'%' IDENTIFIED BY 'mariadb';
 
-GRANT CREATE ON *.* TO 'mariadb'@'%';
+-- Grant database creation privileges
+GRANT CREATE, ALTER, DROP ON *.* TO 'mariadb'@'%';
 
 FLUSH PRIVILEGES;
 
